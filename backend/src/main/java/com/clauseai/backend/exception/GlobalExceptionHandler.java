@@ -15,7 +15,7 @@ import java.util.Map;
 public class GlobalExceptionHandler
 {
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> gobalExceptionHandler(Exception ex, WebRequest request)
+    public ResponseEntity<?> globalExceptionHandler(Exception ex, WebRequest request)
     {
         Map<String,Object> body = new HashMap<>();
         body.put("timestamp", new Date());
