@@ -11,4 +11,6 @@ public class DashboardResponse
     private String username;
     private String email;
     private List<ContractAnalysis> recentContracts;
+    private long totalCount;
+    private double averageRiskScore;
 }

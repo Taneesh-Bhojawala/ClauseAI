@@ -101,11 +101,11 @@ const Analysis = () => {
                                     <Typography variant="h4" fontWeight="bold" color="text.primary">Risk Report</Typography>
                                     <Box sx={{
                                         p: 2, borderRadius: '50%',
-                                        bgcolor: result.overallRiskScore > 70 ? '#fee2e2' : '#dcfce7',
-                                        color: result.overallRiskScore > 70 ? '#dc2626' : '#16a34a',
+                                        bgcolor: result.riskScore > 70 ? '#fee2e2' : '#dcfce7',
+                                        color: result.riskScore > 70 ? '#dc2626' : '#16a34a',
                                         fontWeight: 'bold', border: '2px solid currentColor'
                                     }}>
-                                        {result.overallRiskScore}/100
+                                        {result.riskScore}/100
                                     </Box>
                                 </Box>
 

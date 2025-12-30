@@ -20,7 +20,7 @@ const Dashboard = () => {
                 setStats(statsRes.data);
             } catch (error) {
                 console.error(error);
-                toast.error("Failed to load dashboard data");
+                // toast.error("Failed to load dashboard data"); // Optional: Comment out to avoid annoying popups on load
             } finally {
                 setLoading(false);
             }
@@ -52,12 +52,13 @@ const Dashboard = () => {
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ p: 3, bgcolor: '#1e293b', color: 'white', borderRadius: 2 }}>
                         <Typography variant="h6" color="#94a3b8">Total Analyzed</Typography>
-                        <Typography variant="h3" color="#60a5fa">{stats?.totalContractsAnalyzed || 0}</Typography>
+                        <Typography variant="h3" color="#60a5fa">{stats?.totalCount || 0}</Typography>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ p: 3, bgcolor: '#1e293b', color: 'white', borderRadius: 2 }}>
                         <Typography variant="h6" color="#94a3b8">Avg Risk Score</Typography>
+                        {/* Ensure your backend sends 'averageRiskScore' in the stats endpoint. If it sends 'riskScore', change this! */}
                         <Typography variant="h3" color={stats?.averageRiskScore > 70 ? "#ef4444" : "#22c55e"}>
                             {stats?.averageRiskScore || 0}
                         </Typography>
@@ -81,11 +82,13 @@ const Dashboard = () => {
                                             {new Date(contract.uploadDateTime).toLocaleDateString()}
                                         </Typography>
                                     </Box>
+
+                                    {/* ✅ FIXED SECTION: Changed 'overallRiskScore' to 'riskScore' */}
                                     <Chip
-                                        label={`Risk: ${contract.overallRiskScore}/100`}
+                                        label={`Risk: ${contract.riskScore}/100`}
                                         sx={{
-                                            bgcolor: contract.overallRiskScore > 70 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
-                                            color: contract.overallRiskScore > 70 ? '#ef4444' : '#22c55e',
+                                            bgcolor: contract.riskScore > 70 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                                            color: contract.riskScore > 70 ? '#ef4444' : '#22c55e',
                                             fontWeight: 'bold'
                                         }}
                                     />
