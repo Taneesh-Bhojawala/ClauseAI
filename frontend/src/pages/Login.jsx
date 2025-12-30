@@ -1,169 +1,196 @@
-import {useState} from "react";
-import {TextField, Button, Container, Paper, Typography, Box, Link, Alert, CircularProgress} from "@mui/material";
-import api from "../services/api";
-import {useNavigate} from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import {
+    Box, Button, Container, TextField, Typography, Paper, Tabs, Tab,
+    InputAdornment, IconButton, CircularProgress, Link
+} from '@mui/material';
+import { Visibility, VisibilityOff, Email, Lock, Person, Key } from '@mui/icons-material';
+
+const API_URL = "http://localhost:8080/api/auth";
+
+// --- Helper for Error Messages ---
+const getErrorMessage = (error) => {
+    if (error.response && error.response.data) {
+        if (typeof error.response.data === 'string') return error.response.data;
+        if (error.response.data.message) return error.response.data.message;
+    }
+    return "Something went wrong.";
+};
+
+// --- Styles ---
+const darkInputStyles = {
+    '& .MuiOutlinedInput-root': {
+        color: 'white',
+        '& fieldset': { borderColor: '#475569' },
+        '&:hover fieldset': { borderColor: '#3b82f6' },
+        '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+    },
+    '& .MuiInputLabel-root': { color: '#94a3b8' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#3b82f6' },
+    '& .MuiInputAdornment-root': { color: '#94a3b8' },
+};
 
 const Login = () => {
     const navigate = useNavigate();
 
-    const [isSignup, setIsSignup] = useState(false);
+    // Modes: 0=Login, 1=Signup, 2=ForgotPassword
+    const [tabValue, setTabValue] = useState(0);
+    const [showOtpField, setShowOtpField] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
-    const [email, setEmail] = useState("");
-    const [username, setUsername] = useState("");
-    const [otp, setOtp] = useState("");
-    const [password, setPassword] = useState("");
+    const [formData, setFormData] = useState({
+        username: '', email: '', password: '', otp: ''
+    });
 
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState({type: "", text: ""});
-    const [otpSent, setOtpSent] = useState(false);
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const handleSendOtp = async () => {
-        if(!email) return message({type: "error", message: "Please enter email first!"});
-
-        setLoading(true);
-        setMessage({type: "", text: ""});
-
-        try
-        {
-            const response = await api.post("/auth/otp", {email});
-            setMessage({type: "success", text: response.data.message});
-            setOtpSent(true);
-        }
-        catch (error) {
-            const errorMessage = error.response?.data?.message || "Failed to send OTP.";
-            setMessage({type: "error", text: errorMessage});
-        }
-        finally {
-            setLoading(false);
-        }
+    const handleTabChange = (event, newValue) => {
+        setTabValue(newValue);
+        setShowOtpField(false);
+        setFormData({ username: '', email: '', password: '', otp: '' });
     };
 
-    const handleSubmit = async () => {
-        setLoading(true);
-        setMessage({ type: '', text: '' });
+    // --- ACTIONS ---
 
+    const handleGenerateOtp = async () => {
+        if (!formData.email) return toast.error("Please enter email");
+        setIsLoading(true);
         try {
-            if (isSignup) {
-
-                await api.post('/auth/signup', { username, email, password, otp });
-
-                setMessage({ type: 'success', text: 'Account created successfully! Please login.' });
-
-                setIsSignup(false);
-                setOtpSent(false);
-                setOtp('');
-                setPassword('');
-            }
-            else {
-
-                const response = await api.post('/auth/login', { email, password });
-
-                localStorage.setItem('token', response.data.token);
-                localStorage.setItem('user', JSON.stringify(response.data));
-
-                navigate('/dashboard');
-            }
-        }
-        catch (error) {
-            const errorMsg = error.response?.data?.message || 'Something went wrong. Please try again.';
-            setMessage({ type: 'error', text: errorMsg });
-        }
-        finally {
-            setLoading(false);
-        }
+            await axios.post(`${API_URL}/otp`, { email: formData.email });
+            toast.success("OTP Sent!");
+            setShowOtpField(true);
+        } catch (error) {
+            toast.error(getErrorMessage(error));
+        } finally { setIsLoading(false); }
     };
 
-return (
-    <Container maxWidth="xs">
-        <Box mt={8}>
-            <Paper elevation={3} style={{ padding: '2rem', textAlign: 'center' }}>
+    const handleLogin = async () => {
+        setIsLoading(true);
+        try {
+            const res = await axios.post(`${API_URL}/login`, { email: formData.email, password: formData.password });
+            localStorage.setItem("user", JSON.stringify(res.data));
+            toast.success("Login Successful");
+            navigate('/dashboard');
+        } catch (error) { toast.error(getErrorMessage(error)); }
+        finally { setIsLoading(false); }
+    };
 
-                {/* Header */}
-                <Typography variant="h5" gutterBottom style={{ fontWeight: 'bold' }}>
-                    {isSignup ? "Create Account" : "Welcome Back"}
+    const handleSignup = async () => {
+        setIsLoading(true);
+        try {
+            await axios.post(`${API_URL}/signup`, { ...formData });
+            toast.success("Account Created!");
+            setTabValue(0); setShowOtpField(false);
+        } catch (error) { toast.error(getErrorMessage(error)); }
+        finally { setIsLoading(false); }
+    };
+
+    const handleResetPassword = async () => {
+        if (!formData.otp || !formData.password) return toast.error("Fill OTP and New Password");
+        setIsLoading(true);
+        try {
+            await axios.post(`${API_URL}/reset-password`, {
+                email: formData.email, otp: formData.otp, newPassword: formData.password
+            });
+            toast.success("Password Reset! Please Login.");
+            setTabValue(0); setShowOtpField(false);
+        } catch (error) { toast.error(getErrorMessage(error)); }
+        finally { setIsLoading(false); }
+    };
+
+    return (
+        <Container maxWidth="xs">
+            <Paper elevation={10} sx={{ p: 4, borderRadius: 4, bgcolor: '#1e293b', color: 'white', border: '1px solid #334155' }}>
+                <Typography variant="h4" align="center" fontWeight="bold" sx={{ mb: 1, color: '#60a5fa' }}>ClauseAI</Typography>
+                <Typography variant="body2" align="center" sx={{ color: '#94a3b8', mb: 3 }}>
+                    {tabValue === 2 ? "Reset Your Password" : (tabValue === 0 ? "Welcome back, Lawyer." : "Analyze contracts in seconds.")}
                 </Typography>
-                <Typography variant="body2" color="textSecondary" gutterBottom>
-                    {isSignup ? "Sign up to analyze contracts" : "Login to access your dashboard"}
-                </Typography>
 
-                {message.text && (
-                    <Box mt={2} mb={2}>
-                        <Alert severity={message.type}>{message.text}</Alert>
-                    </Box>
+                {/* Hide Tabs when in Forgot Password Mode */}
+                {tabValue !== 2 && (
+                    <Tabs value={tabValue} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 3, '& .MuiTab-root': { color: '#94a3b8' }, '& .Mui-selected': { color: '#60a5fa' }, '& .MuiTabs-indicator': { bgcolor: '#60a5fa' } }}>
+                        <Tab label="Log In" />
+                        <Tab label="Sign Up" />
+                    </Tabs>
                 )}
 
-                {isSignup && (
-                    <TextField
-                        label="Username" fullWidth margin="normal"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
-                )}
+                <Box component="form" onSubmit={(e) => e.preventDefault()} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-                <TextField
-                    label="Email Address" fullWidth margin="normal"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+                    {/* Username (Signup Only) */}
+                    {tabValue === 1 && (
+                        <TextField fullWidth label="Username" name="username" value={formData.username} onChange={handleChange} disabled={showOtpField} sx={darkInputStyles} InputProps={{ startAdornment: (<InputAdornment position="start"><Person /></InputAdornment>) }} />
+                    )}
 
-                {isSignup && (
-                    <Box display="flex" flexDirection="column" alignItems="center" mt={1}>
-                        {!otpSent ? (
-                            <Button
-                                variant="outlined" size="small"
-                                onClick={handleSendOtp}
-                                disabled={loading || !email}
-                                style={{ marginBottom: '0.5rem' }}
-                            >
-                                {loading ? "Sending..." : "Get OTP Code"}
-                            </Button>
-                        ) : (
-                            <TextField
-                                label="Enter 6-digit OTP" fullWidth margin="normal"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                helperText="OTP sent to your email"
-                            />
-                        )}
-                    </Box>
-                )}
+                    {/* Email (Always Visible) */}
+                    <TextField fullWidth label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} disabled={showOtpField && tabValue !== 2} sx={darkInputStyles} InputProps={{ startAdornment: (<InputAdornment position="start"><Email /></InputAdornment>) }} />
 
-                <TextField
-                    label="Password" type="password" fullWidth margin="normal"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-
-                <Button
-                    variant="contained" color="primary" fullWidth
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    style={{ marginTop: '1.5rem', padding: '0.75rem', fontWeight: 'bold' }}
-                >
-                    {loading ? <CircularProgress size={24} color="inherit"/> : (isSignup ? "Sign Up" : "Login")}
-                </Button>
-
-                <Box mt={3}>
-                    <Typography variant="body2">
-                        {isSignup ? "Already have an account? " : "Don't have an account? "}
-                        <Link
-                            component="button"
-                            variant="body2"
-                            style={{ fontWeight: 'bold' }}
-                            onClick={() => {
-                                setIsSignup(!isSignup);
-                                setMessage({ type: '', text: '' }); // Clear errors when switching
+                    {/* Password Field (Login, Signup, Reset) */}
+                    {/* In Forgot Password mode, this only shows AFTER OTP is sent (Step 2) OR if we want them to set new pass immediately. Let's show it in Step 2 for Reset. */}
+                    {(tabValue !== 2 || showOtpField) && (
+                        <TextField
+                            fullWidth
+                            label={tabValue === 2 ? "New Password" : "Password"}
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={formData.password}
+                            onChange={handleChange}
+                            disabled={showOtpField && tabValue === 1} // Disabled only during Signup OTP verification
+                            sx={darkInputStyles}
+                            InputProps={{
+                                startAdornment: (<InputAdornment position="start"><Lock /></InputAdornment>),
+                                endAdornment: (<InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: '#94a3b8' }}>{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment>)
                             }}
-                        >
-                            {isSignup ? "Login" : "Sign Up"}
-                        </Link>
-                    </Typography>
-                </Box>
+                        />
+                    )}
 
+                    {/* OTP Field (Signup Step 2 OR ForgotPassword Step 2) */}
+                    {showOtpField && (
+                        <TextField fullWidth label="Enter 6-Digit OTP" name="otp" value={formData.otp} onChange={handleChange} sx={{ ...darkInputStyles, '& .MuiOutlinedInput-root fieldset': { borderColor: '#22c55e' } }} InputProps={{ startAdornment: (<InputAdornment position="start"><Key sx={{ color: '#22c55e' }} /></InputAdornment>) }} />
+                    )}
+
+                    {/* Forgot Password Link (Login Only) */}
+                    {tabValue === 0 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Link component="button" variant="body2" onClick={() => { setTabValue(2); setShowOtpField(false); setFormData({username:'', email:'', password:'', otp:''}) }} sx={{ color: '#60a5fa', textDecoration: 'none' }}>
+                                Forgot Password?
+                            </Link>
+                        </Box>
+                    )}
+
+                    {/* Back to Login Link (Forgot Password Mode Only) */}
+                    {tabValue === 2 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                            <Link component="button" variant="body2" onClick={() => setTabValue(0)} sx={{ color: '#94a3b8', textDecoration: 'none' }}>
+                                ← Back to Login
+                            </Link>
+                        </Box>
+                    )}
+
+                    {/* Main Action Button */}
+                    <Button
+                        fullWidth variant="contained" size="large" type="button" disabled={isLoading}
+                        sx={{ mt: 1, py: 1.5, fontWeight: 'bold', borderRadius: 2, bgcolor: tabValue === 0 ? '#3b82f6' : (tabValue === 2 ? '#f59e0b' : (!showOtpField ? '#8b5cf6' : '#22c55e')) }}
+                        onClick={() => {
+                            if (tabValue === 0) handleLogin();
+                            else if (tabValue === 1) !showOtpField ? handleGenerateOtp() : handleSignup();
+                            else if (tabValue === 2) !showOtpField ? handleGenerateOtp() : handleResetPassword();
+                        }}
+                    >
+                        {isLoading ? <CircularProgress size={24} color="inherit" /> : (
+                            tabValue === 0 ? "Log In" : (
+                                tabValue === 1 ? (!showOtpField ? "Generate OTP" : "Verify & Signup") :
+                                    (!showOtpField ? "Send Reset OTP" : "Reset Password")
+                            )
+                        )}
+                    </Button>
+
+                </Box>
             </Paper>
-        </Box>
-    </Container>
-);
+        </Container>
+    );
 };
 
 export default Login;

@@ -7,6 +7,6 @@ import java.util.Optional;
 
 public interface OtpRepository extends MongoRepository<OtpToken, String>
 {
-    Optional<OtpToken> findLatestByEmail(String email);
+    Optional<OtpToken> findTopByEmailOrderByCreatedAtDesc(String email);
     void deleteByEmail(String email);
 }

@@ -23,30 +23,47 @@ public class AuthController {
     AuthService authService;
 
     @PostMapping("/otp")
-    public ResponseEntity<Map<String, String>> sendOtp(@RequestBody OtpRequest otpRequest) {
-        authService.generateAndSendOtp(otpRequest);
-        return ResponseEntity.ok(Collections.singletonMap("message", "OTP sent successfully to " + otpRequest.getEmail()));
+    public ResponseEntity<?> sendOtp(@RequestBody OtpRequest otpRequest) {
+        try {
+            authService.generateAndSendOtp(otpRequest);
+            return ResponseEntity.ok(Collections.singletonMap("message", "OTP sent successfully to " + otpRequest.getEmail()));
+        } catch (Exception e) {
+            // This ensures the frontend gets the actual error text (e.g. "Email already registered")
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
+        }
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<Map<String, String>> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
-        String result = authService.registerUser(signUpRequest);
-        return ResponseEntity.ok(Collections.singletonMap("message", result));
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
+        try {
+            String result = authService.registerUser(signUpRequest);
+            return ResponseEntity.ok(Collections.singletonMap("message", result));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        return ResponseEntity.ok(authService.authenticateUser(loginRequest));
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        try {
+            return ResponseEntity.ok(authService.authenticateUser(loginRequest));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
+        }
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody PasswordResetRequest resetRequest) {
-        String result = authService.resetPassword(resetRequest);
-        return ResponseEntity.ok(Collections.singletonMap("message", result));
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetRequest resetRequest) {
+        try {
+            String result = authService.resetPassword(resetRequest);
+            return ResponseEntity.ok(Collections.singletonMap("message", result));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
+        }
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logoutUser() {
+    public ResponseEntity<?> logoutUser() {
         String result = authService.logoutUser();
         return ResponseEntity.ok(Collections.singletonMap("message", result));
     }
