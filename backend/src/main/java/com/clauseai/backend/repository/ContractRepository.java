@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface ContractRepository extends MongoRepository<ContractAnalysis,String>
 {
-    List<ContractAnalysis> findByUserId(String userId);
+    List<ContractAnalysis> findByUserIdOrderByUploadDateTimeDesc(String userId);
     List<ContractAnalysis> findByUserIdAndTitleContainsIgnoreCase(String userId,String title);
 }
