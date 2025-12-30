@@ -9,4 +9,5 @@ public interface ContractRepository extends MongoRepository<ContractAnalysis,Str
 {
     List<ContractAnalysis> findByUserIdOrderByUploadDateTimeDesc(String userId);
     List<ContractAnalysis> findByUserIdAndTitleContainsIgnoreCase(String userId,String title);
+    List<ContractAnalysis> findTop3ByUserIdOrderByUploadDateDesc(String userId);
 }

@@ -23,13 +23,13 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<ContractAnalysis> contracts = contractRepository.findByUserIdOrderByUploadDateTimeDesc(email);
+        List<ContractAnalysis> recent3 = contractRepository.findTop3ByUserIdOrderByUploadDateDesc(email);
 
         DashboardResponse response = new DashboardResponse();
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
 
-        response.setRecentContracts(contracts);
+        response.setRecentContracts(recent3);
 
         return response;
     }
