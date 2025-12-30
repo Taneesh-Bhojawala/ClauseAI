@@ -23,7 +23,7 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<ContractAnalysis> contracts = contractRepository.findByUserId(email);
+        List<ContractAnalysis> contracts = contractRepository.findByUserIdOrderByUploadDateTimeDesc(email);
 
         DashboardResponse response = new DashboardResponse();
         response.setUsername(user.getUsername());
