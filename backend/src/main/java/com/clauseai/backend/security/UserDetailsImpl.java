@@ -20,6 +20,9 @@ public class UserDetailsImpl implements UserDetails {
     private String password;
 
     private Collection<? extends GrantedAuthority> authorities;
+    public String getDisplayName() {
+        return username;
+    }
     @Override
     public String getUsername() {
         return email;
