@@ -22,7 +22,7 @@ public class ContractAnalysis{
     private List<Clause> clauses;
 
     @Data
-    private static class Clause{
+    public static class Clause{
         private String originalText;
         private String summary;
         private double riskScore;
