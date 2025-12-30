@@ -46,9 +46,17 @@ public class AuthService {
     // --- 1. SEND OTP ---
     public void generateAndSendOtp(OtpRequest otpRequest) {
         String email = otpRequest.getEmail();
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+
+        if (email == null || !email.matches(emailRegex)) {
+            throw new RuntimeException("Error: Invalid email format. Please enter a valid email.");
+        }
+//        if (userRepository.existsByEmail(email)) {
+//            throw new RuntimeException("Error: Email is already registered. Please Login.");
+//        } -> This should be there for sign up
         String otpCode = String.format("%06d", new Random().nextInt(999999));
 
-        otpRepository.deleteByEmail(email); // Clean up old OTPs
+        otpRepository.deleteByEmail(email);
 
         OtpToken token = new OtpToken();
         token.setEmail(email);
@@ -118,7 +126,7 @@ public class AuthService {
     }
 
     private void verifyOtp(String email, String otpInput) {
-        OtpToken otpToken = otpRepository.findLatestByEmail(email)
+        OtpToken otpToken = otpRepository.findTopByEmailOrderByCreatedAtDesc(email)
                 .orElseThrow(() -> new RuntimeException("Error: OTP not found. Please request a new one."));
 
         if (!otpToken.getOtp().equals(otpInput)) {
