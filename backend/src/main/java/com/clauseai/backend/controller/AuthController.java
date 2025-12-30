@@ -44,4 +44,10 @@ public class AuthController {
         String result = authService.resetPassword(resetRequest);
         return ResponseEntity.ok(Collections.singletonMap("message", result));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logoutUser() {
+        String result = authService.logoutUser();
+        return ResponseEntity.ok(Collections.singletonMap("message", result));
+    }
 }
