@@ -32,13 +32,14 @@ public class ContractController{
 
         try {
             // 1. Extract Text
+            String userId = getCurrentUserEmail();
             String text = pdfExtractionService.extractText(file);
             if (text == null) {
                 return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body("PDF text not readable.");
             }
 
             // 2. AI Analysis
-            ContractAnalysis analysis = aiAnalysisService.analyseContract(text, "user1");
+            ContractAnalysis analysis = aiAnalysisService.analyseContract(text, userId);
 
             // 3. Save to DB
             analysis.setTitle(file.getOriginalFilename());
@@ -61,7 +62,8 @@ public class ContractController{
         }
 
         try {
-            ContractAnalysis analysis = aiAnalysisService.analyseContract(text, "user1");
+            String userId = getCurrentUserEmail();
+            ContractAnalysis analysis = aiAnalysisService.analyseContract(text, userId);
             analysis.setTitle(title);
             analysis.setInputType("TEXT");
             analysis.setUserId(getCurrentUserEmail());
