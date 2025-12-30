@@ -38,7 +38,7 @@ public class ContractController{
             }
 
             // 2. AI Analysis
-            ContractAnalysis analysis = aiAnalysisService.analyseContract(text);
+            ContractAnalysis analysis = aiAnalysisService.analyseContract(text, "user1");
 
             // 3. Save to DB
             analysis.setTitle(file.getOriginalFilename());
@@ -61,7 +61,7 @@ public class ContractController{
         }
 
         try {
-            ContractAnalysis analysis = aiAnalysisService.analyseContract(text);
+            ContractAnalysis analysis = aiAnalysisService.analyseContract(text, "user1");
             analysis.setTitle(title);
             analysis.setInputType("TEXT");
             analysis.setUserId(getCurrentUserEmail());
