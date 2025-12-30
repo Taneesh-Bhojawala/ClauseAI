@@ -21,5 +21,5 @@ public class SignUpRequest {
     private String password;
 
     @NotBlank(message = "OTP is required")
-    private String otp; // The code the user typed in
+    private String otp;
 }
