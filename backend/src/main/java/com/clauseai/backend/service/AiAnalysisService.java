@@ -1,48 +1,40 @@
 package com.clauseai.backend.service;
 
 import com.clauseai.backend.model.ContractAnalysis;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.clauseai.backend.repository.ContractRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
 
 @Service
-public class AiAnalysisService
-{
+public class AiAnalysisService {
+
+    @Autowired
+    private ContractRepository repository;
+
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    private final String GeminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=";
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
 
-    private ContractAnalysis callGemini(String contractText) throws Exception
-    {
-        String prompt = "You are a legal expert. Analyze this contract text. "+"RETURN ONLY RAW JSON. Do not use Markdown. "+
-                "Use this exact schema matching the Java Model: "+"{ \"riskScore\": (double 0.0-100.0), "+
-                "\"clauses\": [ { \"originalText\": (string), \"summary\": (string), \"riskScore\": (double), \"explanation\": (string) } ] } \n\n"+
-                "CONTRACT TEXT: \n"+contractText;
+    private ContractAnalysis callGemini(String contractText) throws Exception {
+        Client client = Client.builder().apiKey(apiKey).build();
 
-        ObjectNode request = objectMapper.createObjectNode();
-        ArrayNode contents = request.putArray("contents");
-        ObjectNode contentNode = contents.addObject();
-        contentNode.put("role", "user");
-        contentNode.putArray("parts").addObject().put("text", prompt);
+        String prompt = "You are a legal expert. Analyze this contract text. " +
+                "RETURN ONLY RAW JSON. Do not use Markdown. " +
+                "Use this exact schema matching the Java Model: " +
+                "{ \"riskScore\": (double 0.0-100.0), " +
+                "\"clauses\": [ { \"originalText\": (string), \"summary\": (string), \"riskScore\": (double), \"explanation\": (string) } ] } \n\n" +
+                "CONTRACT TEXT: \n" + contractText;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> requestEntity = new HttpEntity<>(request.toString(), headers);
+        GenerateContentResponse response = client.models.generateContent("gemini-2.5-flash", prompt, null);
 
-        String response = restTemplate.postForObject(GeminiUrl + apiKey, requestEntity, String.class);
-
-        JsonNode root = objectMapper.readTree(response);
-        String aiText = root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
+        String aiText = response.text();
 
         aiText = aiText.replace("```json", "").replace("```", "").trim();
 
@@ -51,14 +43,17 @@ public class AiAnalysisService
         return analysis;
     }
 
-    public ContractAnalysis analyseContract(String contractText)
-    {
-        try
-        {
-            return callGemini(contractText);
-        }
-        catch (Exception e)
-        {
+    public ContractAnalysis analyseContract(String contractText, String userId) {
+        try {
+            ContractAnalysis analysis = callGemini(contractText);
+            analysis.setUserId(userId);
+            analysis.setUploadDateTime(LocalDateTime.now());
+
+            repository.save(analysis);
+
+            return analysis;
+        } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("AI analysis failed: " + e.getMessage());
         }
     }
